@@ -1,1 +1,42 @@
+name: Build Native Floating Girlfriend App
+on:
+  push:
+    branches: [ main, master ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android Project Structure
+        run: |
+          mkdir -p app/src/main/java/com/orion/floatinggirlfriend
+          mv AndroidManifest.xml app/src/main/
+          mv FloatingService.java app/src/main/java/com/orion/floatinggirlfriend/
+          mv MainActivity.java app/src/main/java/com/orion/floatinggirlfriend/
+          
+          # গ্রেডল স্ক্রিপ্ট ইঞ্জিন ইনজেকশন
+          echo 'apply plugin: "com.android.application"' > app/build.gradle
+          echo 'android { compileSdkVersion 33; defaultConfig { applicationId "com.orion.floatinggirlfriend"; minSdkVersion 21; targetSdkVersion 33; versionCode 1; versionName "1.0" } }' >> app/build.gradle
+          echo 'include ":app"' > settings.gradle
+          
+          gradle wrapper
+
+      - name: Compile Native Core Source (.APK)
+        run: ./gradlew assembleDebug
+
+      - name: Upload Native App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Floating-AI-Girlfriend
+          path: app/build/outputs/apk/debug/app-debug.apk
